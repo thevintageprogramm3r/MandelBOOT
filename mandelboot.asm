@@ -11,7 +11,8 @@ _start:
 	; di = Current pixel 0 <= di < 0xFA00
 	; cx = Column (x)
 	; dx = Row (y)
-	; bl = Counter % 255 (final color)
+	; bx = Counter 
+	; bl = Counter % 255 + 32 (final color)
 
 	; Make data segment at 0
 	xor 	ax, ax
@@ -37,14 +38,14 @@ _start:
 loop_begin:
 
 	; Clear values in memory; make bl point to the 32nd color
-	mov		bl, 0x20
+	xor		bx, bx
 	mov		dword [z_x], 0x0
 	mov		dword [z_y], 0x0
 	
 
 mdbt:
 
-	cmp		bl, [max_i]
+	cmp		bx, [max_i]	; Break out of loop if max_i has been reached
 	je		plot_max
 	
 	; Calculate next point on the real axis
@@ -79,11 +80,12 @@ mdbt:
 	
 	fcompp	
 	fstsw	ax			; Store flags in ax
-	inc		bl
+	inc		bx
 	sahf				; Set flags in FLAGS register
 	
 	jnc		mdbt		; If carry is down, z_y * z_y + z_x * z_x <= 4
 	
+	add		bl, 0x20	; I like the palette starting at color 32
 	mov		[es:di], bl ; Place resulting color into memory address
 	jmp		continue
 
@@ -138,7 +140,7 @@ z_x_temp   dd      0.0
 z_y        dd      0.0
 a		   dd	   -2.0
 b		   dd	   1.125
-max_i	   db	   15		; DO NOT SET OVER 255
+max_i	   dw	   96		; DO NOT SET OVER 65535
 two		   dd	   2.0
 
 times 510 - ($-$$)  db  0	
